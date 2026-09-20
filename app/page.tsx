@@ -3,7 +3,7 @@
 
 import { useEffect, useState } from "react";
 
-const IMG = (name: string) => "/Images/" + name;
+const IMG = (name: string) => "/images/" + name;
 const VIDEO = (name: string) => "/Videos/" + name;
 
 const phone = "+916290566875";
