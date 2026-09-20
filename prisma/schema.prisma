@@ -1,8 +1,3 @@
-// This is your Prisma schema file,
-// learn more about it in the docs: https://pris.ly/d/prisma-schema
-
-// Get a free hosted Postgres database in seconds: `npx create-db`
-
 generator client {
   provider = "prisma-client"
   output   = "../app/generated/prisma"
@@ -10,4 +5,649 @@ generator client {
 
 datasource db {
   provider = "postgresql"
+}
+
+enum UserRole {
+  GUEST
+  HOST
+  ADMIN
+}
+
+enum PropertyType {
+  HOMESTAY
+  APARTMENT
+  HOUSE
+  VILLA
+  ROOM
+}
+
+enum BookingStatus {
+  PENDING
+  CONFIRMED
+  CANCELLED
+  COMPLETED
+  EXPIRED
+}
+
+enum DiscountType {
+  PERCENTAGE
+  FLAT
+}
+
+enum PackageType {
+  STAY_PACKAGE
+  SIGHTSEEING
+  CURATED_TOUR
+  TRANSPORT
+  EXPERIENCE
+  OTHER
+}
+
+enum PackagePricingType {
+  FLAT
+  PER_PERSON
+  PER_ADULT
+  PER_VEHICLE
+  PER_NIGHT
+}
+
+enum ExtraTaxType {
+  STANDARD
+  SEPARATE
+  NON_TAXABLE
+}
+
+enum PaymentStatus {
+  PENDING
+  PAID
+  FAILED
+  REFUNDED
+}
+
+enum BookingPaymentStatus {
+  UNPAID
+  PARTIALLY_PAID
+  PAID
+  REFUNDED
+}
+
+enum PaymentMethod {
+  CARD
+  UPI
+  CASH
+  BANK_TRANSFER
+  PAYMENT_GATEWAY
+  OTHER
+}
+
+enum BookingSource {
+  DIRECT
+  PHONE
+  WHATSAPP
+  WEBSITE
+  REFERRAL
+  OTHER
+}
+
+enum ReviewStatus {
+  PENDING
+  PUBLISHED
+  HIDDEN
+}
+
+model User {
+  id        String   @id @default(cuid())
+  name      String
+  email     String   @unique
+  password  String?
+  phone     String?
+  role      UserRole @default(GUEST)
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  properties Property[]
+  bookings   Booking[]
+  reviews    Review[]
+}
+
+model Property {
+  id          String       @id @default(cuid())
+  name        String
+  description String
+  type        PropertyType @default(HOMESTAY)
+
+  address    String
+  city       String
+  state      String?
+  country    String  @default("India")
+  postalCode String?
+
+  latitude  Float?
+  longitude Float?
+
+  maxGuests Int
+  bedrooms  Int @default(1)
+  bathrooms Int @default(1)
+
+  basePrice     Decimal  @db.Decimal(10, 2)
+  cleaningFee   Decimal? @db.Decimal(10, 2)
+  taxPercentage Decimal  @default(0) @db.Decimal(5, 2)
+
+  isActive Boolean @default(true)
+
+  hostId String
+  host   User   @relation(fields: [hostId], references: [id], onDelete: Cascade)
+
+  rooms     Room[]
+  bookings  Booking[]
+  reviews   Review[]
+  images    PropertyImage[]
+  amenities PropertyAmenity[]
+
+  createdAt DateTime  @default(now())
+  updatedAt DateTime  @updatedAt
+  packages  Package[]
+
+  @@index([hostId])
+  @@index([city])
+  @@index([type])
+  @@index([isActive])
+}
+
+model Room {
+  id          String  @id @default(cuid())
+  name        String
+  description String?
+  capacity    Int
+  maxAdults   Int?
+  maxChildren Int?
+  price       Decimal @db.Decimal(10, 2)
+  baseRate    Decimal @db.Decimal(10, 2)
+  quantity    Int     @default(1)
+  isActive    Boolean @default(true)
+
+  propertyId String
+  property   Property @relation(fields: [propertyId], references: [id], onDelete: Cascade)
+
+  bookings      Booking[]
+  availability  RoomAvailability[]
+  rates         RoomRate[]
+  discountRooms DiscountRoom[]
+
+  createdAt                     DateTime                       @default(now())
+  updatedAt                     DateTime                       @updatedAt
+  cancellationPolicyAssignments CancellationPolicyAssignment[]
+
+  @@index([propertyId])
+}
+
+model RoomAvailability {
+  id String @id @default(cuid())
+
+  roomId String
+  room   Room   @relation(fields: [roomId], references: [id], onDelete: Cascade)
+
+  date DateTime @db.Date
+
+  isOpen    Boolean @default(true)
+  isBlocked Boolean @default(false)
+  isSoldOut Boolean @default(false)
+
+  availableQuantity Int?
+
+  minimumStay Int?
+  maximumStay Int?
+
+  note String?
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@unique([roomId, date])
+  @@index([date])
+  @@index([roomId, date])
+}
+
+model RoomRate {
+  id String @id @default(cuid())
+
+  roomId String
+  room   Room   @relation(fields: [roomId], references: [id], onDelete: Cascade)
+
+  date DateTime @db.Date
+
+  rate Decimal @db.Decimal(10, 2)
+
+  label String?
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@unique([roomId, date])
+  @@index([date])
+  @@index([roomId, date])
+}
+
+model Booking {
+  id String @id @default(cuid())
+
+  checkIn  DateTime
+  checkOut DateTime
+
+  guests      Int
+  totalAmount Decimal @db.Decimal(10, 2)
+
+  status BookingStatus @default(PENDING)
+
+  guestId                    String?
+  guest                      User?          @relation(fields: [guestId], references: [id], onDelete: SetNull)
+  guestName                  String?
+  guestPhone                 String?
+  guestEmail                 String?
+  guestAddress               String?
+  guestIdDocument            String?
+  propertyId                 String
+  property                   Property       @relation(fields: [propertyId], references: [id], onDelete: Cascade)
+  packageId                  String?
+  package                    Package?       @relation(fields: [packageId], references: [id], onDelete: SetNull)
+  roomId                     String?
+  room                       Room?          @relation(fields: [roomId], references: [id], onDelete: SetNull)
+  cancellationPolicyName     String?
+  cancellationPolicySnapshot Json?
+  payments                   Payment[]
+  nights                     BookingNight[]
+  holdExpiresAt              DateTime?
+  createdAt                  DateTime       @default(now())
+  updatedAt                  DateTime       @updatedAt
+  bookingNumber              String         @unique
+
+  adults   Int @default(1)
+  children Int @default(0)
+
+  source        BookingSource        @default(WEBSITE)
+  paymentStatus BookingPaymentStatus @default(UNPAID)
+
+  subtotalAmount   Decimal          @default(0) @db.Decimal(10, 2)
+  discountAmount   Decimal          @default(0) @db.Decimal(10, 2)
+  taxAmount        Decimal          @default(0) @db.Decimal(10, 2)
+  extrasAmount     Decimal          @default(0) @db.Decimal(10, 2)
+  bookingExtras    BookingExtra[]
+  bookingHistories BookingHistory[]
+
+  @@index([guestId])
+  @@index([propertyId])
+  @@index([roomId])
+  @@index([checkIn, checkOut])
+  @@index([status])
+  @@index([packageId])
+}
+
+model BookingCounter {
+  year     Int @id
+  sequence Int @default(0)
+
+  updatedAt DateTime @updatedAt
+}
+
+model BookingExtra {
+  id String @id @default(cuid())
+
+  bookingId String
+  booking   Booking @relation(fields: [bookingId], references: [id], onDelete: Cascade)
+
+  name     String
+  quantity Int    @default(1)
+
+  unitPrice  Decimal @db.Decimal(10, 2)
+  totalPrice Decimal @db.Decimal(10, 2)
+
+  notes String?
+
+  createdAt DateTime @default(now())
+
+  @@index([bookingId])
+}
+
+model Extra {
+  id String @id @default(cuid())
+
+  name        String
+  description String?
+
+  price         Decimal      @db.Decimal(10, 2)
+  taxType       ExtraTaxType @default(STANDARD)
+  taxPercentage Decimal?     @db.Decimal(5, 2)
+
+  isActive Boolean @default(true)
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@index([isActive])
+}
+
+model Discount {
+  id String @id @default(cuid())
+
+  name        String
+  description String?
+
+  type  DiscountType
+  value Decimal      @db.Decimal(10, 2)
+
+  promoCode String? @unique
+
+  startDate DateTime? @db.Date
+  endDate   DateTime? @db.Date
+
+  minimumStay Int?
+
+  usageLimit Int?
+  usageCount Int  @default(0)
+
+  isAutomatic Boolean           @default(false)
+  isActive    Boolean           @default(true)
+  rooms       DiscountRoom[]
+  packages    DiscountPackage[]
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+}
+
+model DiscountRoom {
+  discountId String
+  roomId     String
+
+  discount Discount @relation(fields: [discountId], references: [id], onDelete: Cascade)
+  room     Room     @relation(fields: [roomId], references: [id], onDelete: Cascade)
+
+  @@id([discountId, roomId])
+  @@index([roomId])
+}
+
+model DiscountPackage {
+  discountId String
+  packageId  String
+
+  discount Discount @relation(fields: [discountId], references: [id], onDelete: Cascade)
+  package  Package  @relation(fields: [packageId], references: [id], onDelete: Cascade)
+
+  @@id([discountId, packageId])
+  @@index([packageId])
+}
+
+model BookingHistory {
+  id String @id @default(cuid())
+
+  bookingId String
+  booking   Booking @relation(fields: [bookingId], references: [id], onDelete: Cascade)
+
+  action String
+
+  description String?
+
+  oldData Json?
+  newData Json?
+
+  performedById String?
+
+  createdAt DateTime @default(now())
+
+  @@index([bookingId])
+  @@index([createdAt])
+}
+
+model CancellationPolicy {
+  id String @id @default(cuid())
+
+  name        String
+  description String?
+
+  isDefault Boolean @default(false)
+  isActive  Boolean @default(true)
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  rules                         CancellationRule[]
+  cancellationPolicyAssignments CancellationPolicyAssignment[]
+}
+
+model CancellationRule {
+  id String @id @default(cuid())
+
+  policyId String
+  policy   CancellationPolicy @relation(fields: [policyId], references: [id], onDelete: Cascade)
+
+  daysBeforeArrival Int
+
+  retentionPercentage Decimal @db.Decimal(5, 2)
+
+  sortOrder Int @default(0)
+
+  @@index([policyId])
+}
+
+model CancellationPolicyAssignment {
+  id String @id @default(cuid())
+
+  policyId String
+  policy   CancellationPolicy @relation(fields: [policyId], references: [id], onDelete: Cascade)
+
+  roomId String?
+  room   Room?   @relation(fields: [roomId], references: [id])
+
+  packageId String?
+  package   Package? @relation(fields: [packageId], references: [id])
+
+  startDate DateTime @db.Date
+  endDate   DateTime @db.Date
+
+  priority Int @default(0)
+}
+
+model BookingNight {
+  id String @id @default(cuid())
+
+  bookingId String
+  booking   Booking @relation(fields: [bookingId], references: [id], onDelete: Cascade)
+
+  date DateTime @db.Date
+
+  baseRate  Decimal @db.Decimal(10, 2)
+  finalRate Decimal @db.Decimal(10, 2)
+
+  createdAt DateTime @default(now())
+
+  @@unique([bookingId, date])
+  @@index([date])
+}
+
+model Package {
+  id String @id @default(cuid())
+
+  propertyId String
+  property   Property @relation(fields: [propertyId], references: [id], onDelete: Cascade)
+
+  bookings         Booking[]
+  inclusions       PackageInclusion[]
+  exclusions       PackageExclusion[]
+  images           PackageImage[]
+  discountPackages DiscountPackage[]
+  availability     PackageAvailability[]
+  name             String
+  description      String?
+  type             PackageType           @default(STAY_PACKAGE)
+  pricingType      PackagePricingType    @default(FLAT)
+
+  basePrice       Decimal @db.Decimal(10, 2)
+  durationMinutes Int?
+
+  minParticipants Int?
+  maxParticipants Int?
+
+  requiresStay Boolean   @default(false)
+  startDate    DateTime? @db.Date
+  endDate      DateTime? @db.Date
+
+  isPublic Boolean @default(true)
+
+  minimumStay Int?
+  maximumStay Int?
+
+  isActive   Boolean @default(true)
+  isFeatured Boolean @default(false)
+  sortOrder  Int     @default(0)
+
+  createdAt                     DateTime                       @default(now())
+  updatedAt                     DateTime                       @updatedAt
+  cancellationPolicyAssignments CancellationPolicyAssignment[]
+
+  @@index([propertyId])
+  @@index([isActive])
+}
+
+model PackageAvailability {
+  id String @id @default(cuid())
+
+  packageId String
+  package   Package @relation(fields: [packageId], references: [id], onDelete: Cascade)
+
+  date DateTime @db.Date
+
+  isAvailable Boolean @default(true)
+  isBlocked   Boolean @default(false)
+
+  capacity Int?
+  note     String?
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@unique([packageId, date])
+  @@index([date])
+  @@index([packageId, date])
+}
+
+model PackageImage {
+  id String @id @default(cuid())
+
+  packageId String
+  package   Package @relation(fields: [packageId], references: [id], onDelete: Cascade)
+
+  url       String
+  alt       String?
+  sortOrder Int     @default(0)
+
+  createdAt DateTime @default(now())
+
+  @@index([packageId])
+}
+
+model PackageInclusion {
+  id String @id @default(cuid())
+
+  packageId String
+  package   Package @relation(fields: [packageId], references: [id], onDelete: Cascade)
+
+  text      String
+  sortOrder Int    @default(0)
+
+  createdAt DateTime @default(now())
+
+  @@index([packageId])
+}
+
+model PackageExclusion {
+  id String @id @default(cuid())
+
+  packageId String
+  package   Package @relation(fields: [packageId], references: [id], onDelete: Cascade)
+
+  text      String
+  sortOrder Int    @default(0)
+
+  createdAt DateTime @default(now())
+
+  @@index([packageId])
+}
+
+model Payment {
+  id String @id @default(cuid())
+
+  amount Decimal       @db.Decimal(10, 2)
+  status PaymentStatus @default(PENDING)
+  method PaymentMethod @default(OTHER)
+
+  bookingId String
+  booking   Booking @relation(fields: [bookingId], references: [id], onDelete: Cascade)
+
+  createdAt       DateTime  @default(now())
+  updatedAt       DateTime  @updatedAt
+  provider        String?
+  providerOrderId String?
+  transactionId   String?   @unique
+  notes           String?
+  paidAt          DateTime?
+
+  @@index([status])
+}
+
+model Review {
+  id String @id @default(cuid())
+
+  rating  Int
+  comment String?
+
+  status ReviewStatus @default(PUBLISHED)
+
+  guestId String
+  guest   User   @relation(fields: [guestId], references: [id], onDelete: Cascade)
+
+  propertyId String
+  property   Property @relation(fields: [propertyId], references: [id], onDelete: Cascade)
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@unique([guestId, propertyId])
+  @@index([guestId])
+  @@index([propertyId])
+  @@index([status])
+}
+
+model Amenity {
+  id          String  @id @default(cuid())
+  name        String  @unique
+  description String?
+
+  properties PropertyAmenity[]
+
+  createdAt DateTime @default(now())
+}
+
+model PropertyAmenity {
+  propertyId String
+  amenityId  String
+
+  property Property @relation(fields: [propertyId], references: [id], onDelete: Cascade)
+  amenity  Amenity  @relation(fields: [amenityId], references: [id], onDelete: Cascade)
+
+  @@id([propertyId, amenityId])
+  @@index([amenityId])
+}
+
+model PropertyImage {
+  id String @id @default(cuid())
+
+  url       String
+  alt       String?
+  sortOrder Int     @default(0)
+
+  propertyId String
+  property   Property @relation(fields: [propertyId], references: [id], onDelete: Cascade)
+
+  createdAt DateTime @default(now())
+
+  @@index([propertyId])
 }
