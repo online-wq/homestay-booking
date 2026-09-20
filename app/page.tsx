@@ -1387,7 +1387,7 @@ export default function Home() {
         .heroImage {
           position: absolute;
           inset: 0;
-          background-image: url("/Images/hero.jpeg");
+          background-image: url("/images/hero.jpeg");
           background-size: cover;
           background-position: center;
           transform: scale(1.04);
