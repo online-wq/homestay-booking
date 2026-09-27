@@ -30,7 +30,29 @@ export default function RootLayout({ children }: LayoutProps<"/">) {
       lang="en"
       className={`${geistSans.variable} ${geistMono.variable} h-full antialiased`}
     >
-      <body className="min-h-full flex flex-col">{children}</body>
+      <body className="min-h-full flex flex-col">
+  <script
+    type="application/ld+json"
+    dangerouslySetInnerHTML={{
+      __html: JSON.stringify({
+        "@context": "https://schema.org",
+        "@type": "LodgingBusiness",
+        name: "Green Hill Retreat",
+        url: "https://www.greenhillretreatchibbo.com",
+        telephone: ["+91-6290566875", "+91-9830058237"],
+        email: "online@greenhillretreatchibbo.com",
+        address: {
+          "@type": "PostalAddress",
+          addressLocality: "Kalimpong",
+          addressRegion: "West Bengal",
+          postalCode: "734301",
+          addressCountry: "IN",
+        },
+      }),
+    }}
+  />
+  {children}
+</body>
     </html>
   );
 }
