@@ -272,9 +272,9 @@ export default function Home() {
 
         <div className="heroContent reveal">
           <h1>
-            A quiet escape
-            <br />
-            in the hills
+           Green Hill Retreat
+          <br />
+           Homestay in Kalimpong
           </h1>
 
           <p>
