@@ -15,6 +15,9 @@ const geistMono = Geist_Mono({
 export const metadata: Metadata = {
   title: "Green Hill Retreat | Kalimpong Homestay",
   description: "Your serene getaway in Kalimpong",
+  icons: {
+    icon: "/logo.PNG",
+  },
 };
 
 export default function RootLayout({ children }: LayoutProps<"/">) {
