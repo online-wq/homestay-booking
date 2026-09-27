@@ -426,7 +426,10 @@ export default function Home() {
 
           <div className="aboutImages reveal">
             <div className="aboutMainImage">
-              <img src={IMG("property.jpeg")} alt="Green Hill Retreat property" />
+              <img
+              src={IMG("property.jpeg")}
+               alt="Green Hill Retreat homestay in Upper Chibbo, Kalimpong"
+/>
             </div>
 
             <div className="aboutSideImages">
