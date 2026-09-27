@@ -13,8 +13,12 @@ const geistMono = Geist_Mono({
 });
 
 export const metadata: Metadata = {
+  metadataBase: new URL("https://www.greenhillretreatchibbo.com"),
   title: "Green Hill Retreat | Kalimpong Homestay",
   description: "Your serene getaway in Kalimpong",
+  alternates: {
+    canonical: "/",
+  },
   icons: {
     icon: "/logo.PNG",
   },
