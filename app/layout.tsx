@@ -14,8 +14,10 @@ const geistMono = Geist_Mono({
 
 export const metadata: Metadata = {
   metadataBase: new URL("https://www.greenhillretreatchibbo.com"),
-  title: "Green Hill Retreat | Kalimpong Homestay",
-  description: "Your serene getaway in Kalimpong",
+  title: "Green Hill Retreat | Homestay in Kalimpong, West Bengal",
+
+description:
+  "Stay at Green Hill Retreat in Upper Chibbo near Kalimpong, West Bengal. Enjoy peaceful mountain views, comfortable rooms, local food, and a relaxing hill stay.",
   alternates: {
     canonical: "/",
   },
